@@ -286,32 +286,6 @@ index_name = f"docs_v1_{model_slug}_{embedding_version}"
 
 ---
 
-## 📚 Article Series
-
-All implementation details are explained in the companion article series:
-
-| # | Article | Module |
-|---|---------|--------|
-| 1 | Document Ingestion and Normalization | `ingestion/` |
-| 2 | Semantic Chunking Strategies | `chunking/` |
-| 3 | Embedding Best Practices | `embeddings/` |
-| 4 | Vector Stores and ANN Indexing | `retrieval/` |
-| 5 | Hybrid Retrieval Mastery | `retrieval/` |
-| 6 | Reranking Pipeline | `reranking/` |
-| 7 | Context Assembly and Prompting | `context/` |
-| 8 | LLM Grounding and Structured Output | `context/` |
-| 9 | Post-LLM Verification | `verification/` |
-| 10 | Graph-RAG Integration | `graph_rag/` |
-| 11 | Monitoring and Evaluation | `monitoring/` |
-| 12 | Operational Excellence | `deployment/` |
-| 13 | Security and Compliance | `security/` |
-| 14 | Cost Optimization | `cost_optimization/` |
-| 15 | Maintenance and Lifecycle | Various |
-
-📖 Full index: [docs/article_series_index.md](docs/article_series_index.md)
-
----
-
 ## 🧪 Testing
 
 ### Run Evaluation
@@ -390,7 +364,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Enterprise RAG Stack** — Built with ❤️ for production RAG systems
 
-*Companion code for the Medium article series: [The Enterprise RAG Engineering Playbook](https://medium.com/)*
+*Companion code for the Medium article series: [The Enterprise RAG Engineering Playbook](https://medium.com/@adnansattar09)*
 
 [Report Bug](https://github.com/AdnanSattar/enterprise-rag-stack/issues) · [Request Feature](https://github.com/AdnanSattar/enterprise-rag-stack/issues)
 
