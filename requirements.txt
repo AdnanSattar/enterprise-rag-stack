@@ -1,0 +1,35 @@
+# RAG Service Dependencies
+# Production-grade requirements with pinned versions
+
+# Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+pydantic==2.8.0
+
+# Vector Store
+chromadb==0.5.0
+
+# Embeddings
+sentence-transformers==3.0.0
+tiktoken==0.7.0
+
+# LLM
+openai>=1.30.0
+
+# ML/Reranking
+transformers>=4.40.0
+torch>=2.0.0
+
+# Document Processing (optional, for full ingestion support)
+# unstructured[all-docs]>=0.12.0
+
+# Caching (optional)
+redis>=5.0.0
+
+# Utilities
+numpy>=1.24.0
+python-multipart>=0.0.9
+
+# Monitoring (optional)
+# prometheus-client>=0.20.0
+

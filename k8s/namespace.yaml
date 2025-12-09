@@ -1,0 +1,9 @@
+# Kubernetes Namespace for RAG Service
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rag-service
+  labels:
+    app: rag-service
+    environment: production
+

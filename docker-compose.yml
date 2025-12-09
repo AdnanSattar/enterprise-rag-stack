@@ -1,0 +1,111 @@
+# RAG Service Docker Compose
+# Development and testing configuration
+
+version: "3.9"
+
+services:
+  # ============================================
+  # ChromaDB Vector Store
+  # ============================================
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: rag-chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    volumes:
+      - chroma_data:/chroma/chroma
+    ports:
+      - "8001:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================
+  # Redis Cache (Optional)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: rag-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================
+  # RAG API Service
+  # ============================================
+  rag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-api
+    environment:
+      # Chroma configuration
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - COLLECTION_NAME=docs_v1
+      
+      # OpenAI configuration (set via .env or secrets)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Redis configuration
+      - REDIS_URL=redis://redis:6379
+      - CACHE_TTL=3600
+      
+      # Application settings
+      - LOG_LEVEL=INFO
+      - DEBUG=false
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/documents:/data/documents:ro
+    depends_on:
+      chroma:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================
+  # Nginx Reverse Proxy (Optional, for production)
+  # ============================================
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: rag-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./certs:/etc/nginx/certs:ro
+  #   depends_on:
+  #     - rag-api
+  #   restart: unless-stopped
+
+volumes:
+  chroma_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: rag-network
+

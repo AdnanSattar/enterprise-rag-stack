@@ -1,0 +1,20 @@
+# Kubernetes ConfigMap for RAG Service
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rag-config
+  namespace: rag-service
+data:
+  # Chroma configuration
+  CHROMA_HOST: "chroma-service"
+  CHROMA_PORT: "8000"
+  COLLECTION_NAME: "docs_v1"
+  
+  # Redis configuration
+  REDIS_URL: "redis://redis-service:6379"
+  CACHE_TTL: "3600"
+  
+  # Application settings
+  LOG_LEVEL: "INFO"
+  DEBUG: "false"
+
