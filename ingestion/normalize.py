@@ -1,21 +1,21 @@
 """
-Document ingestion and normalization pipeline.
-Clean input beats clever retrieval.
+Document normalization and cleaning.
 
-Production checklist:
-- Normalize into consistent plain text
-- Remove boilerplate and dedupe content
-- Extract and persist structured metadata
-- Segment on semantic boundaries
+Clean input beats clever retrieval. This module handles:
+- Boilerplate removal
+- OCR artifact cleaning
+- Metadata extraction
+- Text normalization
+
+Pipeline: Raw files -> Parsers -> Cleaning -> Normalized text + metadata
 """
 
-import hashlib
 import logging
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +33,8 @@ BOILERPLATE_PATTERNS = [
 
 
 @dataclass
-class IngestionResult:
-    """Result of document ingestion."""
+class NormalizationResult:
+    """Result of document normalization."""
 
     doc_id: str
     text: str
@@ -42,17 +42,6 @@ class IngestionResult:
     success: bool
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
-
-
-@dataclass
-class IngestionStats:
-    """Statistics from ingestion run."""
-
-    total_docs: int = 0
-    successful: int = 0
-    failed: int = 0
-    duplicates_removed: int = 0
-    total_chars_processed: int = 0
 
 
 def strip_boilerplate(text: str, patterns: List[str] = None) -> str:
@@ -64,7 +53,13 @@ def strip_boilerplate(text: str, patterns: List[str] = None) -> str:
         patterns: Regex patterns to remove (uses defaults if None)
 
     Returns:
-        Cleaned text
+        Cleaned text with boilerplate removed
+
+    Example:
+        >>> text = "Page 1 of 10\\nActual content here\\nAll rights reserved"
+        >>> clean = strip_boilerplate(text)
+        >>> "Page 1 of 10" not in clean
+        True
     """
     patterns = patterns or BOILERPLATE_PATTERNS
 
@@ -83,9 +78,16 @@ def clean_ocr_artifacts(text: str) -> str:
     Clean common OCR artifacts.
 
     Handles:
-    - Broken words across lines
+    - Broken words across lines (word-\\nbreak -> wordbreak)
     - Random line breaks mid-sentence
-    - Page headers inserted into paragraphs
+    - Unicode quote/dash normalization
+    - Page break artifacts
+
+    Args:
+        text: Text with potential OCR artifacts
+
+    Returns:
+        Cleaned text
     """
     # Fix hyphenated line breaks (word-\nbreak -> wordbreak)
     text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
@@ -105,7 +107,15 @@ def clean_ocr_artifacts(text: str) -> str:
 
 
 def extract_metadata_from_path(path: Path) -> Dict:
-    """Extract metadata from file path and stats."""
+    """
+    Extract metadata from file path and stats.
+
+    Args:
+        path: Path object for the file
+
+    Returns:
+        Dict containing file metadata
+    """
     stat = path.stat()
 
     return {
@@ -118,24 +128,17 @@ def extract_metadata_from_path(path: Path) -> Dict:
     }
 
 
-def compute_content_hash(text: str) -> str:
-    """Compute content hash for deduplication."""
-    # Normalize whitespace before hashing
-    normalized = " ".join(text.split())
-    return hashlib.md5(normalized.encode("utf-8")).hexdigest()
-
-
 def normalize_document(
     path: str,
     tenant_id: str,
     additional_metadata: Optional[Dict] = None,
     custom_boilerplate: Optional[List[str]] = None,
-) -> IngestionResult:
+) -> NormalizationResult:
     """
     Full document normalization pipeline.
 
     Pipeline:
-    1. Read file content
+    1. Read file content (using unstructured if available)
     2. Clean OCR artifacts
     3. Remove boilerplate
     4. Extract metadata
@@ -145,18 +148,25 @@ def normalize_document(
         path: Path to document file
         tenant_id: Tenant identifier for multi-tenancy
         additional_metadata: Extra metadata to include
-        custom_boilerplate: Additional boilerplate patterns
+        custom_boilerplate: Additional boilerplate patterns to remove
 
     Returns:
-        IngestionResult with cleaned text and metadata
+        NormalizationResult with cleaned text and metadata
+
+    Example:
+        >>> result = normalize_document("./contract.pdf", "acme")
+        >>> if result.success:
+        ...     print(f"Processed {result.metadata['filename']}")
     """
+    from .dedupe import compute_content_hash
+
     errors = []
     warnings = []
     file_path = Path(path)
 
     # Check file exists
     if not file_path.exists():
-        return IngestionResult(
+        return NormalizationResult(
             doc_id="",
             text="",
             metadata={},
@@ -165,7 +175,7 @@ def normalize_document(
         )
 
     try:
-        # Try to use unstructured if available
+        # Try to use unstructured if available (handles PDFs, DOCX, etc.)
         try:
             from unstructured.partition.auto import partition
 
@@ -205,7 +215,7 @@ def normalize_document(
         if additional_metadata:
             metadata.update(additional_metadata)
 
-        return IngestionResult(
+        return NormalizationResult(
             doc_id=doc_id,
             text=cleaned,
             metadata=metadata,
@@ -216,90 +226,6 @@ def normalize_document(
 
     except Exception as e:
         logger.exception(f"Error processing {path}")
-        return IngestionResult(
+        return NormalizationResult(
             doc_id="", text="", metadata={}, success=False, errors=[str(e)]
         )
-
-
-class IngestionPipeline:
-    """
-    Production ingestion pipeline with deduplication.
-
-    Flow:
-    Raw files -> Parsers -> Cleaning & dedupe -> Normalized text + metadata -> Chunking
-    """
-
-    def __init__(self, tenant_id: str):
-        self.tenant_id = tenant_id
-        self._seen_hashes: Set[str] = set()
-        self.stats = IngestionStats()
-
-    def process_file(
-        self, path: str, metadata: Optional[Dict] = None
-    ) -> Optional[IngestionResult]:
-        """Process a single file with deduplication."""
-        self.stats.total_docs += 1
-
-        result = normalize_document(
-            path=path, tenant_id=self.tenant_id, additional_metadata=metadata
-        )
-
-        if not result.success:
-            self.stats.failed += 1
-            logger.error(f"Failed to process {path}: {result.errors}")
-            return None
-
-        # Check for duplicates
-        if result.doc_id in self._seen_hashes:
-            self.stats.duplicates_removed += 1
-            logger.info(f"Duplicate detected, skipping: {path}")
-            return None
-
-        self._seen_hashes.add(result.doc_id)
-        self.stats.successful += 1
-        self.stats.total_chars_processed += len(result.text)
-
-        return result
-
-    def process_directory(
-        self, directory: str, extensions: List[str] = None, recursive: bool = True
-    ) -> List[IngestionResult]:
-        """
-        Process all documents in a directory.
-
-        Args:
-            directory: Directory path
-            extensions: File extensions to process (e.g., ['.pdf', '.txt'])
-            recursive: Search subdirectories
-
-        Returns:
-            List of successful IngestionResults
-        """
-        extensions = extensions or [".txt", ".md", ".pdf", ".docx", ".html"]
-        dir_path = Path(directory)
-
-        pattern = "**/*" if recursive else "*"
-        results = []
-
-        for file_path in dir_path.glob(pattern):
-            if file_path.is_file() and file_path.suffix.lower() in extensions:
-                result = self.process_file(str(file_path))
-                if result:
-                    results.append(result)
-
-        logger.info(
-            f"Ingestion complete: {self.stats.successful}/{self.stats.total_docs} "
-            f"successful, {self.stats.duplicates_removed} duplicates removed"
-        )
-
-        return results
-
-    def get_stats(self) -> Dict:
-        """Get ingestion statistics."""
-        return {
-            "total_docs": self.stats.total_docs,
-            "successful": self.stats.successful,
-            "failed": self.stats.failed,
-            "duplicates_removed": self.stats.duplicates_removed,
-            "total_chars_processed": self.stats.total_chars_processed,
-        }

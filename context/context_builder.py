@@ -1,20 +1,22 @@
 """
-Context assembly and prompt budget management.
+Context assembly and prompt construction.
+
 Treat prompt context as a resource with a budget.
 
 Best practices:
 - Concatenate top N reranked chunks with section headers
 - Provide source citations inline using chunk IDs
-- Truncate by token budget, prefer chunk density
+- Add lightweight headings for the LLM like [Section: Payment Terms]
+- Format citations in a way that downstream UIs can map back to documents
 """
 
+import logging
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 import tiktoken
 
-from .config import settings
-from .reranking import RerankResult
+logger = logging.getLogger(__name__)
 
 # Initialize tokenizer
 _enc = tiktoken.get_encoding("cl100k_base")
@@ -37,7 +39,9 @@ class AssembledContext:
 
 
 def format_chunk_header(
-    chunk: RerankResult, index: int, include_score: bool = True
+    chunk,
+    index: int,
+    include_score: bool = True,
 ) -> str:
     """
     Format a chunk header for LLM context.
@@ -45,6 +49,14 @@ def format_chunk_header(
     Example:
     [Source 1] doc=contract_001 chunk=chunk_0 | score: 0.92
     Title: Payment Terms
+
+    Args:
+        chunk: Rerank result with id, doc_id, metadata, final_score
+        index: Chunk index in context
+        include_score: Include relevance score in header
+
+    Returns:
+        Formatted header string
     """
     parts = [f"[Source {index + 1}]"]
     parts.append(f"doc={chunk.doc_id}")
@@ -56,10 +68,9 @@ def format_chunk_header(
     header = " ".join(parts)
 
     # Add title if available
-    title = chunk.metadata.get("title") or (
-        chunk.metadata.get("titles", [None])[0]
-        if chunk.metadata.get("titles")
-        else None
+    metadata = getattr(chunk, "metadata", {})
+    title = metadata.get("title") or (
+        metadata.get("titles", [None])[0] if metadata.get("titles") else None
     )
     if title:
         header += f"\nTitle: {title}"
@@ -68,25 +79,27 @@ def format_chunk_header(
 
 
 def assemble_context(
-    chunks: List[RerankResult],
-    max_tokens: int = None,
+    chunks: List,
+    max_tokens: int = 3000,
     include_scores: bool = True,
     chunk_separator: str = "\n\n---\n\n",
 ) -> AssembledContext:
     """
     Assemble context from reranked chunks.
 
+    Choice: "few long chunks" vs "many small chunks"
+    - Few long chunks: Better for complex reasoning
+    - Many small chunks: Better for fact lookup
+
     Args:
         chunks: Reranked and deduplicated chunks
-        max_tokens: Maximum tokens for context (default: 3/4 of LLM max)
+        max_tokens: Maximum tokens for context
         include_scores: Include relevance scores in headers
         chunk_separator: Separator between chunks
 
     Returns:
         AssembledContext ready for prompt
     """
-    max_tokens = max_tokens or int(settings.llm.max_tokens * 0.75)
-
     context_parts = []
     sources = []
     current_tokens = 0
@@ -126,12 +139,13 @@ def assemble_context(
         current_tokens += chunk_tokens
         chunks_included += 1
 
+        metadata = getattr(chunk, "metadata", {})
         sources.append(
             {
                 "doc_id": chunk.doc_id,
                 "chunk_id": chunk.id,
                 "score": chunk.final_score,
-                "title": chunk.metadata.get("title"),
+                "title": metadata.get("title"),
             }
         )
 
@@ -164,13 +178,51 @@ def format_context_simple(chunks: List[Dict]) -> str:
     """
     out = []
     for i, ch in enumerate(chunks):
-        header = f"[Chunk {i+1}] doc={ch.get('doc_id', 'unknown')} chunk={ch.get('chunk_id', ch.get('id', i))}"
+        header = (
+            f"[Chunk {i+1}] "
+            f"doc={ch.get('doc_id', 'unknown')} "
+            f"chunk={ch.get('chunk_id', ch.get('id', i))}"
+        )
         body = ch.get("text", "")
         out.append(header + "\n" + body)
     return "\n\n".join(out)
 
 
+def build_prompt(
+    context: str,
+    query: str,
+    prompt_type: str = "grounded_qa",
+) -> str:
+    """
+    Build a prompt from context and query.
+
+    Prompt profiles:
+    - grounded_qa: Standard Q&A with grounding
+    - structured: JSON output for downstream pipelines
+    - summarization: Document summarization
+    - compliance: Strict compliance/policy profile
+
+    Args:
+        context: Assembled context string
+        query: User query
+        prompt_type: Type of prompt template
+
+    Returns:
+        Complete prompt string
+    """
+    templates = {
+        "grounded_qa": GROUNDED_QA_PROMPT,
+        "structured": STRUCTURED_OUTPUT_PROMPT,
+        "summarization": SUMMARIZATION_PROMPT,
+        "compliance": COMPLIANCE_PROMPT,
+    }
+
+    template = templates.get(prompt_type, GROUNDED_QA_PROMPT)
+    return template.format(context=context, query=query)
+
+
 # Prompt templates
+
 GROUNDED_QA_PROMPT = """You are an enterprise assistant. Use ONLY the context below to answer the question.
 
 Context:
@@ -182,7 +234,7 @@ Instructions:
 - Answer based solely on the provided context
 - If the answer is not explicitly in the context, reply: "Not found in context"
 - Be concise and accurate
-- Cite source numbers when making claims
+- Cite source numbers when making claims (e.g., [Source 1])
 
 Answer:"""
 
@@ -219,23 +271,18 @@ Provide a structured summary with:
 Summary:"""
 
 
-def build_prompt(context: str, query: str, prompt_type: str = "grounded_qa") -> str:
-    """
-    Build a prompt from context and query.
+COMPLIANCE_PROMPT = """You are a compliance analyst. Answer ONLY using the provided context.
 
-    Args:
-        context: Assembled context string
-        query: User query
-        prompt_type: Type of prompt (grounded_qa, structured, summarization)
+Context:
+{context}
 
-    Returns:
-        Complete prompt string
-    """
-    templates = {
-        "grounded_qa": GROUNDED_QA_PROMPT,
-        "structured": STRUCTURED_OUTPUT_PROMPT,
-        "summarization": SUMMARIZATION_PROMPT,
-    }
+Question: {query}
 
-    template = templates.get(prompt_type, GROUNDED_QA_PROMPT)
-    return template.format(context=context, query=query)
+STRICT RULES:
+1. Use ONLY information from the context above
+2. Do NOT use any external knowledge
+3. If the answer is not in the context, respond: "Information not available in provided documents"
+4. Always cite your sources using [Source N] format
+5. Be precise - avoid generalizations
+
+Analysis:"""

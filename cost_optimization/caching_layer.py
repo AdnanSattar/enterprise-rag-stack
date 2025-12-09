@@ -241,7 +241,7 @@ def get_cache(use_redis: bool = False, redis_url: str = None) -> Any:
 
     if _cache is None:
         if use_redis:
-            from .config import settings
+            from shared.config import settings
 
             _cache = RedisCache(
                 redis_url=redis_url or settings.REDIS_URL,

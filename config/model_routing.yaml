@@ -1,0 +1,61 @@
+# Model Routing Configuration
+# Cost optimization: route queries to appropriate model based on complexity
+
+routing:
+  enabled: true
+  default_model: "medium"
+
+models:
+  small:
+    name: "gpt-4o-mini"
+    max_tokens: 1024
+    temperature: 0.1
+    cost_per_1k_input: 0.00015
+    cost_per_1k_output: 0.0006
+    
+  medium:
+    name: "gpt-4o-mini"
+    max_tokens: 2048
+    temperature: 0.1
+    cost_per_1k_input: 0.00015
+    cost_per_1k_output: 0.0006
+    
+  large:
+    name: "gpt-4o"
+    max_tokens: 4096
+    temperature: 0.0
+    cost_per_1k_input: 0.005
+    cost_per_1k_output: 0.015
+
+# Routing rules
+rules:
+  - name: "short_query"
+    condition: "query_length < 40"
+    model: "small"
+    
+  - name: "complex_domain"
+    condition: "keywords_match"
+    keywords:
+      - "legal"
+      - "policy"
+      - "compliance"
+      - "contract"
+      - "regulation"
+      - "liability"
+      - "indemnification"
+    model: "large"
+    
+  - name: "multi_part"
+    condition: "question_count > 1 or contains 'and'"
+    model: "large"
+    
+  - name: "default"
+    condition: "always"
+    model: "medium"
+
+# Fallback behavior
+fallback:
+  enabled: true
+  model: "medium"
+  max_retries: 2
+

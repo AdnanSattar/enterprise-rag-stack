@@ -1,0 +1,30 @@
+# Index Configuration
+# Vector store and ANN index settings
+
+index:
+  type: "chroma"  # Options: chroma, qdrant, pinecone, faiss
+  collection_name: "docs_v1_bge_large"
+  
+  # ChromaDB settings
+  chroma:
+    path: "./data/chroma"
+    # For remote Chroma:
+    # host: "localhost"
+    # port: 8000
+  
+  # HNSW index parameters (for Chroma/Faiss)
+  hnsw:
+    m: 16  # Number of connections per node
+    ef_construction: 200  # Size of dynamic candidate list
+    ef_search: 50  # Size of dynamic candidate list during search
+  
+  # IVF index parameters (alternative to HNSW)
+  ivf:
+    nlist: 100  # Number of clusters
+    nprobe: 10  # Number of clusters to search
+  
+  # Metadata filtering
+  metadata:
+    enabled: true
+    indexed_fields: ["tenant_id", "doc_type", "created_at"]
+

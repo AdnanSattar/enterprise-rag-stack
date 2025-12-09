@@ -1,0 +1,68 @@
+# Retrieval Configuration
+
+# Hybrid retrieval weights
+# Formula: score = vector_weight * s_vec + lexical_weight * s_bm25
+hybrid:
+  vector_weight: 0.7
+  lexical_weight: 0.3
+  
+  # Query classification adjustments
+  query_classification:
+    enabled: true
+    factual:
+      vector_weight: 0.5
+      lexical_weight: 0.5
+    exploratory:
+      vector_weight: 0.8
+      lexical_weight: 0.2
+    navigational:
+      vector_weight: 0.3
+      lexical_weight: 0.7
+
+# Default retrieval parameters
+defaults:
+  top_k: 10
+  rerank_top_k: 5
+  min_score: 0.3
+
+# BM25 parameters
+bm25:
+  k1: 1.5
+  b: 0.75
+  avg_doc_len: 500
+
+# Vector store (ChromaDB)
+vector_store:
+  type: "chromadb"
+  path: "./data/chroma"
+  collection_name: "docs_v1"
+  
+  # Remote mode
+  # host: "localhost"
+  # port: 8000
+  
+  # HNSW parameters
+  hnsw:
+    space: "cosine"
+    ef_construction: 200
+    M: 16
+
+# Reranking
+reranking:
+  enabled: true
+  model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  max_candidates: 50  # Reranking is expensive, limit candidates
+  
+  # Score blending
+  original_weight: 0.3
+  rerank_weight: 0.7
+  
+  # Deduplication
+  deduplicate: true
+  similarity_threshold: 0.85
+
+# Query expansion
+query_expansion:
+  enabled: false
+  method: "synonyms"  # synonyms, llm
+

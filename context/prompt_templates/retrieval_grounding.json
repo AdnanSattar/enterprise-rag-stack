@@ -1,0 +1,31 @@
+{
+  "name": "retrieval_grounding",
+  "description": "Standard grounded Q&A profile",
+  "version": "1.0",
+  "system_prompt": "You are an enterprise assistant. Answer questions using ONLY the provided context. If information is not in the context, say so clearly.",
+  "user_template": "Context:\n{context}\n\nQuestion: {query}\n\nAnswer based solely on the context above. Cite sources using [Source N] format.",
+  "output_format": "text",
+  "grounding_rules": [
+    "Use ONLY information from the context",
+    "Cite sources for all claims",
+    "If not found in context, respond: 'Not found in context'",
+    "Do not use external knowledge"
+  ],
+  "citation_format": "[Source N]",
+  "failure_response": "Not found in context",
+  "temperature": 0.1,
+  "max_tokens": 1024,
+  "examples": [
+    {
+      "context": "[Source 1] Payment is due within 30 days of invoice date.",
+      "query": "What are the payment terms?",
+      "expected": "Payment is due within 30 days of the invoice date [Source 1]."
+    },
+    {
+      "context": "[Source 1] The contract covers software licensing.",
+      "query": "What is the renewal period?",
+      "expected": "Not found in context"
+    }
+  ]
+}
+

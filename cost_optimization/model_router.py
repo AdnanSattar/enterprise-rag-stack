@@ -7,8 +7,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from .circuit_breaker import CircuitOpenError, get_llm_breaker
-from .config import settings
+from deployment.circuit_breaker import CircuitOpenError, get_llm_breaker
+from shared.config import settings
 
 logger = logging.getLogger(__name__)
 

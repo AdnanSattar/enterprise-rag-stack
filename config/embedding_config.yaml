@@ -1,0 +1,47 @@
+# Embedding Configuration
+# CRITICAL: When changing any value, update version and re-index all documents!
+
+model:
+  name: "all-MiniLM-L6-v2"
+  dimension: 384
+  max_seq_length: 512
+  normalize: true
+
+versioning:
+  version: "2025-01-01"
+  # Update version when:
+  # - Changing model
+  # - Changing preprocessing
+  # - Fine-tuning model
+
+preprocessing:
+  lowercase: false
+  strip_whitespace: true
+  max_chars: 8192
+  # Hash for drift detection
+  preprocessing_hash: "auto"
+
+# Index naming pattern
+index_pattern: "{collection}_{model_slug}_{version}"
+
+# Drift detection
+drift:
+  enabled: true
+  threshold: 0.90
+  alert_on_drift: true
+  window_size: 100
+
+# Alternative models for different use cases
+alternatives:
+  high_accuracy:
+    name: "BAAI/bge-large-en-v1.5"
+    dimension: 1024
+    
+  fast:
+    name: "all-MiniLM-L6-v2"
+    dimension: 384
+    
+  multilingual:
+    name: "paraphrase-multilingual-MiniLM-L12-v2"
+    dimension: 384
+

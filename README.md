@@ -1,208 +1,267 @@
 # Enterprise RAG Stack
 
-> A production-grade Retrieval-Augmented Generation (RAG) implementation featuring hybrid search, semantic chunking, cross-encoder reranking, and multi-level answer verification.
+<div align="center">
+
+**A complete, production-grade reference implementation of modern Retrieval-Augmented Generation systems for 2025 and beyond.**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-A comprehensive, battle-tested RAG service implementing the 15 best practices outlined in [RAG Engineering Best Practices](https://medium.com/) for building high-accuracy, low-latency, enterprise-grade AI systems.
+</div>
 
-## 🎯 Key Features
+---
 
-- **Hybrid Retrieval**: Vector + BM25 lexical search with score fusion
-- **Semantic Chunking**: Token-aware chunking with overlap preservation
-- **Embedding Versioning**: Full lifecycle management for embeddings
-- **Reranking Pipeline**: Cross-encoder reranking for precision
-- **Answer Verification**: Multi-level verification to prevent hallucinations
-- **Circuit Breaker**: Resilient LLM calls with automatic recovery
-- **Caching Layer**: Redis-backed caching for high-frequency queries
-- **Multi-tenant Support**: Tenant isolation and metadata filtering
-- **Production Observability**: Metrics, logging, and request tracing
+This repository accompanies the article series **"The Enterprise RAG Engineering Playbook (2025 Edition)"** and provides modular, end-to-end components for building high-accuracy, scalable, and secure RAG pipelines.
 
-## 📁 Project Structure
+## 🎯 Use Cases
+
+Build production-grade systems for:
+
+- **Enterprise Search** — Find information across thousands of documents
+- **Compliance Assistants** — Policy Q&A with audit trails
+- **Legal Reasoning Tools** — Contract analysis with citation
+- **Customer Support Copilots** — Grounded answers from knowledge bases
+- **Multi-hop Knowledge Systems** — Complex queries requiring graph traversal
+
+---
+
+## ✨ Features
+
+This repository includes reference implementations of **all core RAG subsystems**:
+
+| # | Module | Description |
+|---|--------|-------------|
+| 1 | **Document Ingestion** | OCR cleanup, boilerplate removal, metadata extraction |
+| 2 | **Semantic Chunking** | Title-aware, section-aware, token-budget segmentation |
+| 3 | **Embeddings** | Versioning, drift detection, deterministic preprocessing |
+| 4 | **Hybrid Retrieval** | Vector (HNSW) + BM25 + metadata filtering + score fusion |
+| 5 | **Reranking** | Cross-encoder reranking, batch inference, deduplication |
+| 6 | **Context Assembly** | Structured prompts, token budgeting, inline citations |
+| 7 | **Verification** | Deterministic checks + LLM critic validation |
+| 8 | **Graph-RAG** | Entity linking, knowledge graph traversal, multi-hop evidence |
+| 9 | **Monitoring** | Recall@k, latency dashboards, drift detection |
+| 10 | **Deployment** | FastAPI, circuit breakers, Docker, Kubernetes |
+| 11 | **Security** | ACL filtering, PII redaction, audit logging |
+| 12 | **Cost Optimization** | Model routing, caching, GPU batching |
+
+---
+
+## 📁 Repository Structure
 
 ```
 enterprise-rag-stack/
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI application
-│   ├── config.py            # Configuration management
-│   ├── schemas.py           # Pydantic request/response models
-│   ├── ingestion.py         # Document ingestion pipeline
-│   ├── chunking.py          # Semantic chunking
-│   ├── embeddings.py        # Embedding generation with versioning
-│   ├── retrieval.py         # Hybrid retrieval (vector + lexical)
-│   ├── reranking.py         # Cross-encoder reranking
-│   ├── verification.py      # Answer verification layer
-│   ├── context_assembly.py  # Context building and prompts
-│   ├── llm.py               # LLM client with model routing
-│   ├── cache.py             # Caching layer (Redis/in-memory)
-│   ├── circuit_breaker.py   # Resilience patterns
-│   ├── evaluation.py        # Metrics and evaluation
-│   └── graph_rag.py         # Knowledge graph integration
-├── k8s/                     # Kubernetes manifests
-├── notebooks/               # Demo notebooks
+│
+├── README.md
+├── LICENSE
 ├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
+│
+├── docs/
+│   ├── architecture_overview.md
+│   ├── diagrams/
+│   └── article_series_index.md
+│
+├── config/
+│   ├── embedding_config.yaml
+│   ├── retrieval_config.yaml
+│   ├── model_routing.yaml
+│   ├── index_config.yaml
+│   ├── reranker_config.yaml
+│   └── logging.yaml
+│
+├── data/
+│   ├── sample_documents/
+│   ├── golden_eval_set.json
+│   └── pii_redaction_rules.json
+│
+├── ingestion/              # Document normalization pipeline
+│   ├── normalize.py
+│   ├── ingest_pipeline.py
+│   └── dedupe.py
+│
+├── chunking/               # Semantic chunking strategies
+│   ├── semantic_chunker.py
+│   ├── sentence_splitter.py
+│   └── chunk_eval_tools.py
+│
+├── embeddings/             # Embedding with versioning
+│   ├── embedder.py
+│   └── drift_monitor.py
+│
+├── retrieval/              # Hybrid retrieval system
+│   ├── hybrid_retriever.py
+│   ├── vector_retriever.py
+│   ├── lexical_retriever.py
+│   └── score_fusion.py
+│
+├── reranking/              # Cross-encoder reranking
+│   ├── cross_encoder_reranker.py
+│   └── batch_reranking.py
+│
+├── context/                # Context assembly & prompts
+│   ├── context_builder.py
+│   ├── context_budgeting.py
+│   └── prompt_templates/
+│
+├── verification/           # Answer verification
+│   ├── deterministic_checks.py
+│   ├── critic_llm.py
+│   └── verification_pipeline.py
+│
+├── graph_rag/              # Knowledge graph integration
+│   ├── entity_linking.py
+│   ├── graph_builder.py
+│   ├── graph_traversal.py
+│   └── kg_summarizer.py
+│
+├── monitoring/             # Evaluation & metrics
+│   ├── eval_runner.py
+│   ├── recall_metrics.py
+│   ├── latency_metrics.py
+│   └── evaluation_schema.md
+│
+├── deployment/             # FastAPI, Docker, K8s
+│   ├── fastapi_app.py
+│   ├── circuit_breaker.py
+│   ├── docker/
+│   │   ├── Dockerfile
+│   │   └── docker-compose.yaml
+│   └── k8s/
+│
+├── security/               # ACLs, PII, audit
+│   ├── pii_redaction.py
+│   ├── acl_filters.py
+│   └── audit_logging.py
+│
+└── cost_optimization/      # Model routing, caching
+    ├── model_router.py
+    ├── caching_layer.py
+    ├── gpu_batcher.py
+    └── unit_economics_calculator.py
 ```
+
+---
 
 ## 🚀 Quick Start
 
-### Local Development
-
-1. **Clone and install dependencies:**
+### Installation
 
 ```bash
-git clone https://github.com/yourusername/enterprise-rag-stack.git
+# Clone the repository
+git clone https://github.com/AdnanSattar/enterprise-rag-stack.git
 cd enterprise-rag-stack
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-2. **Set environment variables:**
-
-```bash
+# Set environment variables
 export OPENAI_API_KEY="your-api-key"
 export CHROMA_PATH="./data/chroma"
-export COLLECTION_NAME="docs_v1"
 ```
 
-3. **Run the service:**
+### Run Sample Pipeline
 
 ```bash
-uvicorn app.main:app --reload --port 8000
+# Ingest sample documents
+python ingestion/ingest_pipeline.py --input data/sample_documents --tenant default
+
+# Run hybrid retriever
+python retrieval/hybrid_retriever.py --query "What are the payment terms?"
 ```
 
-4. **Test the API:**
+### Start the API Server
 
 ```bash
-# Health check
-curl http://localhost:8000/health
+# Run FastAPI server
+python deployment/fastapi_app.py
 
-# Query endpoint
-curl -X POST http://localhost:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{"query": "What are the payment terms?", "top_k": 5}'
+# Or with uvicorn
+uvicorn deployment.fastapi_app:app --reload --port 8000
 ```
 
 ### Docker Deployment
 
 ```bash
-# Start all services (Chroma, Redis, RAG API)
+# Build and start all services
 docker-compose up -d
 
 # Check logs
 docker-compose logs -f rag-api
 ```
 
-### Kubernetes Deployment
+---
 
-```bash
-# Create namespace and resources
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/secrets.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/pvc.yaml
-kubectl apply -f k8s/chroma-deployment.yaml
-kubectl apply -f k8s/redis-deployment.yaml
-kubectl apply -f k8s/rag-deployment.yaml
-kubectl apply -f k8s/ingress.yaml
-```
-
-## 📖 API Reference
-
-### Query Endpoint
-
-```http
-POST /query
-```
-
-**Request:**
-
-```json
-{
-  "query": "What are the payment terms?",
-  "top_k": 5,
-  "filters": {"tenant_id": "acme"},
-  "rerank": true,
-  "verify": true,
-  "prompt_type": "grounded_qa"
-}
-```
-
-**Response:**
-
-```json
-{
-  "answer": "Payment must be made within 30 days...",
-  "sources": [
-    {"doc_id": "contract_001", "chunk_id": "chunk_0", "score": 0.92, "title": "Payment Terms"}
-  ],
-  "confidence": "high",
-  "verified": true,
-  "verification_issues": []
-}
-```
-
-### Search Endpoint (No LLM)
-
-```http
-POST /search
-```
-
-### Document Ingestion
-
-```http
-POST /ingest
-POST /ingest/batch
-```
-
-### Health & Metrics
-
-```http
-GET /health
-GET /metrics
-```
-
-## 🏗️ Architecture
+## 📖 Key Concepts
 
 ### The High-Accuracy RAG Formula
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                  Enterprise RAG Stack Pipeline                 │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐ │
-│   │  Ingest  │──▶│  Chunk   │ ─▶│  Embed    │──▶│  Index   │ │
-│   │ & Clean  │    │ Semantic │    │ Version  │    │  HNSW    │ │
-│   └──────────┘    └──────────┘    └──────────┘    └──────────┘ │
-│                                                                │
-│   ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐ │
-│   │  Query   │──▶│  Hybrid  │──▶│ Rerank   │──▶│ Context│ │
-│   │ Rewrite  │    │ Retrieve │    │ Top-K    │    │ Assemble │ │
-│   └──────────┘    └──────────┘    └──────────┘    └──────────┘ │
-│                                                                │
-│   ┌──────────┐    ┌──────────┐    ┌──────────┐                 │
-│   │   LLM    │──▶│  Verify  │──▶│ Response │                │
-│   │ Generate │    │  Answer  │    │  + Cache │                 │
-│   └──────────┘    └──────────┘    └──────────┘                 │
-│                                                                │
-└────────────────────────────────────────────────────────────────┘
+Accuracy = Quality(Ingestion) × Recall(Retrieval) × Precision(Reranking) × Grounding(Verification)
 ```
 
-### Key Components
+### Hybrid Retrieval Score Fusion
 
-| Component | Purpose | Key Practice |
-|-----------|---------|--------------|
-| **Ingestion** | Document normalization | Clean input beats clever retrieval |
-| **Chunking** | Semantic segmentation | 150-300 words, 5-15% overlap |
-| **Embedding** | Vector representation | Version with index, normalize vectors |
-| **Retrieval** | Hybrid search | Vector + BM25 score fusion |
-| **Reranking** | Precision boost | Cross-encoder on top-K candidates |
-| **Verification** | Hallucination prevention | Deterministic + LLM critic |
+```python
+score = vector_weight × s_vector + lexical_weight × s_bm25
+```
+
+**Why hybrid?** Pure vector fails for keyword-heavy queries (SKU numbers, codes). BM25 captures exact matches.
+
+### Two-Level Verification
+
+| Level | Method | What It Catches |
+|-------|--------|-----------------|
+| 1 | Deterministic | Numbers, dates, currencies not in context |
+| 2 | LLM Critic | Unsupported claims, hallucinations |
+
+### Embedding Versioning
+
+```python
+# CRITICAL: When model changes, re-index everything
+index_name = f"docs_v1_{model_slug}_{embedding_version}"
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                      Enterprise RAG Stack                             │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐              │
+│   │ Ingest  │──▶│  Chunk  │──▶│  Embed  │──▶│  Index  │              │
+│   │ & Clean │   │Semantic │   │ Version │   │  HNSW   │              │
+│   └─────────┘   └─────────┘   └─────────┘   └─────────┘              │
+│                                                                       │
+│   ┌─────────┐   ┌─────────┐   ┌─────────┐   ┌─────────┐              │
+│   │ Query   │──▶│ Hybrid  │──▶│ Rerank  │──▶│ Context │              │
+│   │Classify │   │Retrieve │   │ Top-K   │   │Assemble │              │
+│   └─────────┘   └─────────┘   └─────────┘   └─────────┘              │
+│                                                                       │
+│   ┌─────────┐   ┌─────────┐   ┌─────────┐                            │
+│   │   LLM   │──▶│ Verify  │──▶│Response │                            │
+│   │Generate │   │ Answer  │   │ + Cache │                            │
+│   └─────────┘   └─────────┘   └─────────┘                            │
+│                                                                       │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📊 Performance Targets
+
+| Metric | Target | Alert Threshold |
+|--------|--------|-----------------|
+| Recall@5 | > 0.85 | < 0.75 |
+| Precision@5 | > 0.70 | < 0.60 |
+| P95 Latency | < 2000ms | > 5000ms |
+| Hallucination Rate | < 5% | > 10% |
+| Cache Hit Rate | > 40% | < 20% |
+
+---
 
 ## 🔧 Configuration
 
@@ -210,156 +269,129 @@ GET /metrics
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `CHROMA_PATH` | ChromaDB storage path | `/data/chroma` |
-| `CHROMA_HOST` | Remote Chroma host (optional) | - |
+| `OPENAI_API_KEY` | OpenAI API key | Required |
+| `CHROMA_PATH` | ChromaDB storage path | `./data/chroma` |
 | `COLLECTION_NAME` | Vector collection name | `docs_v1` |
-| `OPENAI_API_KEY` | OpenAI API key | - |
 | `REDIS_URL` | Redis connection URL | `redis://localhost:6379` |
-| `CACHE_TTL` | Cache TTL in seconds | `3600` |
 | `LOG_LEVEL` | Logging level | `INFO` |
 
-### Embedding Configuration
+### YAML Configuration
 
-```python
-# app/config.py
-@dataclass
-class EmbeddingConfig:
-    model_name: str = "all-MiniLM-L6-v2"
-    normalize: bool = True
-    version: str = "2025-01-01"  # Update on model changes!
-```
+- `config/embedding_config.yaml` — Embedding model, versioning, drift detection
+- `config/retrieval_config.yaml` — Hybrid weights, BM25 params, reranking
+- `config/model_routing.yaml` — LLM selection based on query complexity
+- `config/index_config.yaml` — Vector store and ANN index settings (HNSW/IVF)
+- `config/reranker_config.yaml` — Cross-encoder and lightweight reranking config
+- `config/logging.yaml` — Structured logging configuration
 
-**Critical Rule**: When changing `embedding_version`, you MUST re-index all documents.
+---
 
-## 📊 Best Practices Implemented
+## 📚 Article Series
 
-### 1. Document Ingestion
+All implementation details are explained in the companion article series:
 
-- ✅ Boilerplate removal
-- ✅ OCR artifact cleaning
-- ✅ Content deduplication
-- ✅ Metadata extraction
+| # | Article | Module |
+|---|---------|--------|
+| 1 | Document Ingestion and Normalization | `ingestion/` |
+| 2 | Semantic Chunking Strategies | `chunking/` |
+| 3 | Embedding Best Practices | `embeddings/` |
+| 4 | Vector Stores and ANN Indexing | `retrieval/` |
+| 5 | Hybrid Retrieval Mastery | `retrieval/` |
+| 6 | Reranking Pipeline | `reranking/` |
+| 7 | Context Assembly and Prompting | `context/` |
+| 8 | LLM Grounding and Structured Output | `context/` |
+| 9 | Post-LLM Verification | `verification/` |
+| 10 | Graph-RAG Integration | `graph_rag/` |
+| 11 | Monitoring and Evaluation | `monitoring/` |
+| 12 | Operational Excellence | `deployment/` |
+| 13 | Security and Compliance | `security/` |
+| 14 | Cost Optimization | `cost_optimization/` |
+| 15 | Maintenance and Lifecycle | Various |
 
-### 2. Chunking Strategy
+📖 Full index: [docs/article_series_index.md](docs/article_series_index.md)
 
-- ✅ Semantic boundaries (paragraphs, headings)
-- ✅ Token-aware limits (800-1500 tokens)
-- ✅ Overlap preservation (5-15%)
-- ✅ Structure preservation
-
-### 3. Embedding Management
-
-- ✅ Version tracking with index
-- ✅ Unit vector normalization
-- ✅ Drift detection monitoring
-- ✅ Deterministic preprocessing
-
-### 4. Hybrid Retrieval
-
-- ✅ Vector similarity (semantic)
-- ✅ BM25 scoring (lexical)
-- ✅ Score normalization and fusion
-- ✅ Metadata filtering
-
-### 5. Reranking Pipeline
-
-- ✅ Cross-encoder reranking
-- ✅ Chunk deduplication
-- ✅ Score blending
-
-### 6. Verification Layer
-
-- ✅ Deterministic checks (numbers, dates)
-- ✅ LLM critic validation
-- ✅ Fallback responses
-
-### 7. Operational Excellence
-
-- ✅ Circuit breaker for LLM calls
-- ✅ Request-level caching
-- ✅ Model routing by complexity
-- ✅ Health checks and metrics
+---
 
 ## 🧪 Testing
 
-### Run the Demo Notebook
-
-```bash
-cd notebooks
-jupyter notebook rag_demo.ipynb
-```
-
-### Evaluation Framework
+### Run Evaluation
 
 ```python
-from app.evaluation import RAGEvaluator, EvalItem
+from monitoring.eval_runner import RAGEvaluator
+from data.golden_eval_set import load_eval_set
 
-# Define evaluation set
-eval_set = [
-    EvalItem(
-        query="What are the payment terms?",
-        expected_doc_ids=["contract_001#chunk_0"]
-    ),
-    # ... more items
-]
-
-# Run evaluation
 evaluator = RAGEvaluator(pipeline=my_pipeline)
-results = evaluator.run_evaluation(eval_set)
+results = evaluator.run_evaluation(load_eval_set())
 
-print(f"Mean Recall: {results.mean_recall:.3f}")
-print(f"Mean Precision: {results.mean_precision:.3f}")
+print(f"Recall@5: {results.mean_recall:.3f}")
 print(f"P95 Latency: {results.p95_latency_ms:.1f}ms")
 ```
 
+### Golden Dataset
+
+```bash
+# Run against golden evaluation set
+python monitoring/eval_runner.py --eval-set data/golden_eval_set.json
+```
+
+---
+
+## 🔒 Security
+
+- **Row-level ACLs** via metadata filters
+- **PII redaction** before indexing
+- **Namespace isolation** for multi-tenancy
+- **Audit logging** for compliance
+- **Encrypted connections** (TLS)
+
+---
+
 ## 📈 Monitoring
 
-### Key Metrics to Track
-
-| Metric | Target | Alert Threshold |
-|--------|--------|-----------------|
-| Recall@K | >0.85 | <0.75 |
-| Precision@K | >0.70 | <0.60 |
-| P95 Latency | <2000ms | >5000ms |
-| Hallucination Rate | <5% | >10% |
-| Cache Hit Rate | >40% | <20% |
-
-### Prometheus Metrics Endpoint
+Export metrics to Prometheus/Grafana:
 
 ```bash
 curl http://localhost:8000/metrics
 ```
 
-## 🔒 Security
+Key metrics:
 
-- Row-level ACLs via metadata filters
-- Tenant namespace isolation
-- PII detection (extensible)
-- Audit logging for all queries
-- Encrypted connections (TLS)
+- `rag_query_latency_ms` — End-to-end latency
+- `rag_retrieval_recall` — Recall@k
+- `rag_cache_hit_rate` — Cache effectiveness
+- `rag_hallucination_rate` — Verification failures
 
-## 📚 References
-
-- [Pinecone: RAG Best Practices](https://www.pinecone.io/)
-- [OpenSearch: Hybrid Search](https://opensearch.org/)
-- [Chunking Strategies](https://medium.com/)
-- [Embedding Drift Detection](https://www.evidentlyai.com/)
-- [ANN Index Tradeoffs (HNSW vs IVF)](https://www.tidb.io/)
+---
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-## 📄 License
+Please ensure:
 
-MIT License - see LICENSE file for details.
+- Code is formatted with `black`
+- Type hints are included
+- Tests pass
+- Documentation is updated
 
 ---
 
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
 **Enterprise RAG Stack** — Built with ❤️ for production RAG systems
 
-*Companion code for the Medium article: [RAG Engineering Best Practices](https://medium.com/)*
+*Companion code for the Medium article series: [The Enterprise RAG Engineering Playbook](https://medium.com/)*
+
+[Report Bug](https://github.com/AdnanSattar/enterprise-rag-stack/issues) · [Request Feature](https://github.com/AdnanSattar/enterprise-rag-stack/issues)
+
+</div>

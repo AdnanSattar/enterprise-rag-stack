@@ -1,22 +1,24 @@
 """
-Semantic chunking module.
+Semantic chunking with hierarchical structure preservation.
+
 Chunking determines what the retriever can find.
 
-Rules of thumb:
-- Prefer semantic chunking over fixed length
-- Aim for 150-300 words or 800-1500 tokens
-- Use 5-15% overlap to preserve context
-- Preserve hierarchical structure
+Best practices:
+- Chunk on semantic boundaries (paragraphs, sections)
+- Preserve document structure (titles, headings)
+- Use overlap to maintain context across chunk boundaries
+- Tune chunk size based on domain:
+  - Legal: larger chunks (800-1200 tokens) for full clauses
+  - Code: medium chunks (400-800 tokens) for functions
+  - FAQs: smaller chunks (200-400 tokens) for discrete answers
 """
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 import tiktoken
-
-from .config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +50,19 @@ class Chunk:
     sections: List[str]
     token_count: int
     chunk_index: int
+    start_char: int = 0
+    end_char: int = 0
+
+
+@dataclass
+class ChunkingConfig:
+    """Configuration for chunking."""
+
+    max_tokens: int = 1000
+    overlap_tokens: int = 100
+    min_chunk_tokens: int = 50
+    preserve_sentences: bool = True
+    include_headings_in_text: bool = True
 
 
 def extract_paragraphs(text: str) -> List[Paragraph]:
@@ -58,6 +73,12 @@ def extract_paragraphs(text: str) -> List[Paragraph]:
     - Markdown headings (# ## ###)
     - Section numbers (1.2.3)
     - All-caps headings
+
+    Args:
+        text: Document text
+
+    Returns:
+        List of Paragraph objects with metadata
     """
     paragraphs = []
     current_title = None
@@ -78,7 +99,7 @@ def extract_paragraphs(text: str) -> List[Paragraph]:
             current_title = heading_match.group(2).strip()
             continue
 
-        # Check for section number pattern
+        # Check for section number pattern (e.g., "1.2.3 Section Name")
         section_match = re.match(r"^(\d+(?:\.\d+)*)\s+(.+)$", block)
         if section_match:
             current_section = section_match.group(1)
@@ -97,22 +118,21 @@ def extract_paragraphs(text: str) -> List[Paragraph]:
 
 
 def semantic_chunk(
-    paragraphs: List[Paragraph], max_tokens: int = None, overlap_tokens: int = None
+    paragraphs: List[Paragraph],
+    max_tokens: int = 1000,
+    overlap_tokens: int = 100,
 ) -> List[Chunk]:
     """
     Semantic chunking with hierarchical heading preservation.
 
     Args:
         paragraphs: List of paragraphs with metadata
-        max_tokens: Maximum tokens per chunk (default from config)
-        overlap_tokens: Overlap tokens between chunks (default from config)
+        max_tokens: Maximum tokens per chunk
+        overlap_tokens: Overlap tokens between chunks
 
     Returns:
         List of semantic chunks
     """
-    max_tokens = max_tokens or settings.chunking.max_tokens
-    overlap_tokens = overlap_tokens or settings.chunking.overlap_tokens
-
     chunks = []
     current: List[Paragraph] = []
     current_tokens = 0
@@ -203,8 +223,131 @@ def _finalize_chunk(paragraphs: List[Paragraph], index: int) -> Chunk:
     )
 
 
+class SemanticChunker:
+    """
+    Production semantic chunker with configurable strategies.
+
+    Usage:
+        chunker = SemanticChunker(max_tokens=1000)
+        chunks = chunker.chunk(document_text)
+
+        # With custom config
+        config = ChunkingConfig(max_tokens=800, overlap_tokens=80)
+        chunker = SemanticChunker(config=config)
+    """
+
+    def __init__(
+        self,
+        max_tokens: int = None,
+        overlap_tokens: int = None,
+        config: ChunkingConfig = None,
+    ):
+        self.config = config or ChunkingConfig()
+        if max_tokens:
+            self.config.max_tokens = max_tokens
+        if overlap_tokens:
+            self.config.overlap_tokens = overlap_tokens
+
+    def chunk(self, text: str) -> List[Chunk]:
+        """
+        Chunk text using semantic boundaries.
+
+        Args:
+            text: Document text
+
+        Returns:
+            List of Chunk objects
+        """
+        paragraphs = extract_paragraphs(text)
+        return semantic_chunk(
+            paragraphs,
+            self.config.max_tokens,
+            self.config.overlap_tokens,
+        )
+
+    def chunk_with_headers(self, text: str) -> List[Dict]:
+        """
+        Chunk text and include section headers in chunk text.
+
+        Useful for providing context to the LLM about
+        which section each chunk came from.
+        """
+        chunks = self.chunk(text)
+        result = []
+
+        for chunk in chunks:
+            # Prepend section header if available
+            header = ""
+            if chunk.titles:
+                header = f"[Section: {chunk.titles[0]}]\n\n"
+
+            result.append(
+                {
+                    "text": header + chunk.text,
+                    "titles": chunk.titles,
+                    "sections": chunk.sections,
+                    "token_count": num_tokens(header + chunk.text),
+                    "chunk_index": chunk.chunk_index,
+                }
+            )
+
+        return result
+
+
+def chunk_document(
+    text: str,
+    doc_id: str,
+    metadata: Optional[Dict] = None,
+    max_tokens: int = 1000,
+    overlap_tokens: int = 100,
+) -> List[Dict]:
+    """
+    Chunk a document and attach metadata to each chunk.
+
+    Args:
+        text: Document text
+        doc_id: Document identifier
+        metadata: Additional metadata to attach
+        max_tokens: Maximum tokens per chunk
+        overlap_tokens: Overlap between chunks
+
+    Returns:
+        List of chunk dicts with IDs and metadata
+
+    Example:
+        >>> chunks = chunk_document(text, "doc_001", {"tenant": "acme"})
+        >>> for chunk in chunks:
+        ...     print(f"Chunk {chunk['id']}: {chunk['token_count']} tokens")
+    """
+    base_metadata = metadata or {}
+
+    paragraphs = extract_paragraphs(text)
+    chunks = semantic_chunk(paragraphs, max_tokens, overlap_tokens)
+
+    result = []
+    for chunk in chunks:
+        chunk_id = f"{doc_id}#chunk_{chunk.chunk_index}"
+        result.append(
+            {
+                "id": chunk_id,
+                "doc_id": doc_id,
+                "chunk_index": chunk.chunk_index,
+                "text": chunk.text,
+                "titles": chunk.titles,
+                "sections": chunk.sections,
+                "token_count": chunk.token_count,
+                **base_metadata,
+            }
+        )
+
+    logger.info(f"Document {doc_id} chunked into {len(result)} chunks")
+    return result
+
+
 def simple_chunk(
-    text: str, max_tokens: int = None, overlap_tokens: int = None
+    text: str,
+    max_tokens: int = 1000,
+    overlap_tokens: int = 100,
 ) -> List[Dict]:
     """
     Simple chunking for unstructured text.
@@ -212,9 +355,6 @@ def simple_chunk(
 
     Returns list of dicts for compatibility.
     """
-    max_tokens = max_tokens or settings.chunking.max_tokens
-    overlap_tokens = overlap_tokens or settings.chunking.overlap_tokens
-
     paragraphs = extract_paragraphs(text)
     chunks = semantic_chunk(paragraphs, max_tokens, overlap_tokens)
 
@@ -228,40 +368,3 @@ def simple_chunk(
         }
         for c in chunks
     ]
-
-
-def chunk_document(
-    text: str, doc_id: str, metadata: Optional[Dict] = None
-) -> List[Dict]:
-    """
-    Chunk a document and attach metadata to each chunk.
-
-    Args:
-        text: Document text
-        doc_id: Document identifier
-        metadata: Additional metadata to attach
-
-    Returns:
-        List of chunk dicts with IDs and metadata
-    """
-    base_metadata = metadata or {}
-    chunks = simple_chunk(text)
-
-    result = []
-    for i, chunk in enumerate(chunks):
-        chunk_id = f"{doc_id}#chunk_{i}"
-        result.append(
-            {
-                "id": chunk_id,
-                "doc_id": doc_id,
-                "chunk_index": i,
-                "text": chunk["text"],
-                "titles": chunk["titles"],
-                "sections": chunk["sections"],
-                "token_count": chunk["token_count"],
-                **base_metadata,
-            }
-        )
-
-    logger.info(f"Document {doc_id} chunked into {len(result)} chunks")
-    return result

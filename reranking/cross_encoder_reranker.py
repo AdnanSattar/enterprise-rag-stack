@@ -1,23 +1,17 @@
 """
-Reranking pipeline.
-Reranking is cost-effective accuracy.
+Cross-encoder reranking for precision boost.
 
-Key points:
-- Cross-encoder reranker for top candidates
-- Merge semantic and lexical signals
-- Deduplicate overlapping chunks
-- Only run on 20-50 candidates (expensive per query)
+Reranking is cost-effective accuracy:
+- Cross-encoders are slower but more accurate than bi-encoders
+- Apply only to top candidates (20-50)
+- Log original scores alongside reranker scores for analysis
 """
 
 import logging
 from dataclasses import dataclass
-from functools import lru_cache
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
-
-from .config import settings
-from .retrieval import RetrievalResult
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +19,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RerankResult:
     """Reranked result with scores."""
+    
     id: str
     doc_id: str
     text: str
@@ -38,12 +33,22 @@ class CrossEncoderReranker:
     """
     Cross-encoder reranker using HuggingFace transformers.
     
-    Cross-encoders are slower but more accurate than bi-encoders.
-    Apply only to top candidates (20-50).
+    Cross-encoders jointly encode query + document pairs,
+    capturing rich interactions missed by bi-encoders.
+    
+    WARNING: Expensive per query - only run on 20-50 candidates!
+    
+    Usage:
+        reranker = CrossEncoderReranker()
+        results = reranker.rerank(query, candidates, top_k=5)
     """
     
     def __init__(self, model_name: str = None):
-        self.model_name = model_name or settings.retrieval.reranker_model
+        """
+        Args:
+            model_name: HuggingFace model name for cross-encoder
+        """
+        self.model_name = model_name or "cross-encoder/ms-marco-MiniLM-L-6-v2"
         self._tokenizer = None
         self._model = None
     
@@ -70,23 +75,25 @@ class CrossEncoderReranker:
     def rerank(
         self,
         query: str,
-        candidates: List[RetrievalResult],
-        top_k: int = None
+        candidates: List,
+        top_k: int = 5,
+        original_weight: float = 0.3,
+        rerank_weight: float = 0.7,
     ) -> List[RerankResult]:
         """
         Rerank candidates using cross-encoder.
         
         Args:
             query: Query string
-            candidates: List of retrieval results
+            candidates: List of retrieval results (need id, doc_id, text, metadata, combined_score)
             top_k: Number of results to return
+            original_weight: Weight for original score
+            rerank_weight: Weight for reranker score
             
         Returns:
             Reranked results
         """
         import torch
-        
-        top_k = top_k or settings.retrieval.rerank_top_k
         
         if not candidates:
             return []
@@ -121,15 +128,15 @@ class CrossEncoderReranker:
         # Combine with original scores
         results = []
         for candidate, rerank_score in zip(candidates, scores):
-            # Weight original and rerank scores
-            final_score = 0.3 * candidate.combined_score + 0.7 * float(rerank_score)
+            original_score = getattr(candidate, 'combined_score', 0.5)
+            final_score = original_weight * original_score + rerank_weight * float(rerank_score)
             
             results.append(RerankResult(
                 id=candidate.id,
-                doc_id=candidate.doc_id,
+                doc_id=getattr(candidate, 'doc_id', candidate.id.split("#")[0]),
                 text=candidate.text,
-                metadata=candidate.metadata,
-                original_score=candidate.combined_score,
+                metadata=getattr(candidate, 'metadata', {}),
+                original_score=original_score,
                 rerank_score=float(rerank_score),
                 final_score=final_score
             ))
@@ -149,22 +156,43 @@ class CrossEncoderReranker:
 class LightweightReranker:
     """
     Lightweight reranker using embedding similarity.
+    
     Use when cross-encoder is too slow.
+    Faster but less accurate than cross-encoder.
     """
     
     def __init__(self):
-        from .embeddings import get_embedding_service
-        self.embedding_service = get_embedding_service()
+        self._embedding_service = None
+    
+    @property
+    def embedding_service(self):
+        """Lazy load embedding service."""
+        if self._embedding_service is None:
+            from embeddings import get_embedding_service
+            self._embedding_service = get_embedding_service()
+        return self._embedding_service
     
     def rerank(
         self,
         query: str,
-        candidates: List[RetrievalResult],
-        top_k: int = None
+        candidates: List,
+        top_k: int = 5,
+        original_weight: float = 0.4,
+        rerank_weight: float = 0.6,
     ) -> List[RerankResult]:
-        """Rerank using embedding cosine similarity."""
-        top_k = top_k or settings.retrieval.rerank_top_k
+        """
+        Rerank using embedding cosine similarity.
         
+        Args:
+            query: Query string
+            candidates: Retrieval results
+            top_k: Number of results
+            original_weight: Weight for original score
+            rerank_weight: Weight for similarity score
+            
+        Returns:
+            Reranked results
+        """
         if not candidates:
             return []
         
@@ -182,14 +210,15 @@ class LightweightReranker:
         
         results = []
         for candidate, sim in zip(candidates, similarities):
-            final_score = 0.4 * candidate.combined_score + 0.6 * float(sim)
+            original_score = getattr(candidate, 'combined_score', 0.5)
+            final_score = original_weight * original_score + rerank_weight * float(sim)
             
             results.append(RerankResult(
                 id=candidate.id,
-                doc_id=candidate.doc_id,
+                doc_id=getattr(candidate, 'doc_id', candidate.id.split("#")[0]),
                 text=candidate.text,
-                metadata=candidate.metadata,
-                original_score=candidate.combined_score,
+                metadata=getattr(candidate, 'metadata', {}),
+                original_score=original_score,
                 rerank_score=float(sim),
                 final_score=final_score
             ))
@@ -198,57 +227,20 @@ class LightweightReranker:
         return results[:top_k]
 
 
-def deduplicate_chunks(
-    results: List[RerankResult],
-    similarity_threshold: float = 0.85
-) -> List[RerankResult]:
-    """
-    Deduplicate overlapping chunks before passing to LLM.
-    
-    Args:
-        results: Reranked results
-        similarity_threshold: Jaccard similarity threshold for dedup
-        
-    Returns:
-        Deduplicated results
-    """
-    if len(results) <= 1:
-        return results
-    
-    def jaccard_similarity(text1: str, text2: str) -> float:
-        """Compute word-level Jaccard similarity."""
-        words1 = set(text1.lower().split())
-        words2 = set(text2.lower().split())
-        
-        if not words1 or not words2:
-            return 0.0
-            
-        intersection = len(words1 & words2)
-        union = len(words1 | words2)
-        return intersection / union
-    
-    deduplicated = [results[0]]
-    
-    for candidate in results[1:]:
-        is_duplicate = False
-        for kept in deduplicated:
-            if jaccard_similarity(candidate.text, kept.text) > similarity_threshold:
-                is_duplicate = True
-                logger.debug(f"Removing duplicate chunk: {candidate.id}")
-                break
-        
-        if not is_duplicate:
-            deduplicated.append(candidate)
-    
-    return deduplicated
-
-
 # Global reranker instance
 _reranker: Optional[CrossEncoderReranker] = None
 
 
 def get_reranker(use_lightweight: bool = False):
-    """Get reranker instance."""
+    """
+    Get reranker instance.
+    
+    Args:
+        use_lightweight: Use fast embedding-based reranker
+        
+    Returns:
+        Reranker instance
+    """
     global _reranker
     if use_lightweight:
         return LightweightReranker()
@@ -259,10 +251,10 @@ def get_reranker(use_lightweight: bool = False):
 
 def rerank_results(
     query: str,
-    candidates: List[RetrievalResult],
-    top_k: int = None,
+    candidates: List,
+    top_k: int = 5,
     deduplicate: bool = True,
-    use_lightweight: bool = False
+    use_lightweight: bool = False,
 ) -> List[RerankResult]:
     """
     Convenience function for reranking.
@@ -277,6 +269,8 @@ def rerank_results(
     Returns:
         Reranked and optionally deduplicated results
     """
+    from .batch_reranking import deduplicate_chunks
+    
     reranker = get_reranker(use_lightweight)
     results = reranker.rerank(query, candidates, top_k)
     

@@ -1,0 +1,34 @@
+{
+  "name": "summarization",
+  "description": "Document summarization profile",
+  "version": "1.0",
+  "system_prompt": "You are a professional document summarizer. Create clear, structured summaries that capture the essential information.",
+  "user_template": "Context:\n{context}\n\nTask: {query}\n\nCreate a comprehensive summary.",
+  "output_format": "markdown",
+  "sections": [
+    {
+      "name": "Executive Summary",
+      "description": "2-3 sentence overview"
+    },
+    {
+      "name": "Key Points",
+      "description": "Bullet list of main points"
+    },
+    {
+      "name": "Details",
+      "description": "Important specifics, numbers, dates"
+    },
+    {
+      "name": "Caveats",
+      "description": "Limitations, exceptions, conditions"
+    }
+  ],
+  "grounding_rules": [
+    "Summarize only what is in the context",
+    "Preserve important numbers and dates exactly",
+    "Note if context is incomplete"
+  ],
+  "temperature": 0.3,
+  "max_tokens": 2048
+}
+

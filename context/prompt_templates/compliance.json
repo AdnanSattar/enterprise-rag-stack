@@ -1,0 +1,44 @@
+{
+  "name": "compliance",
+  "description": "Strict compliance and policy analysis profile",
+  "version": "1.0",
+  "system_prompt": "You are a compliance analyst. You must answer ONLY using information from the provided context. Never use external knowledge.",
+  "user_template": "Context:\n{context}\n\nQuestion: {query}\n\nProvide a detailed compliance analysis based solely on the context above.",
+  "output_format": "structured",
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "finding": {
+        "type": "string",
+        "description": "Main compliance finding"
+      },
+      "evidence": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "source": { "type": "string" },
+            "quote": { "type": "string" }
+          }
+        }
+      },
+      "risk_level": {
+        "type": "string",
+        "enum": ["low", "medium", "high", "critical"]
+      },
+      "recommendations": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "required": ["finding", "evidence", "risk_level"]
+  },
+  "grounding_rules": [
+    "Only cite information explicitly stated in context",
+    "Mark uncertain claims with [UNCERTAIN]",
+    "Refuse to answer if context is insufficient"
+  ],
+  "temperature": 0.0,
+  "max_tokens": 1024
+}
+

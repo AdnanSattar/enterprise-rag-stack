@@ -1,0 +1,35 @@
+# Reranker Configuration
+
+reranker:
+  # Cross-encoder model
+  cross_encoder:
+    model_name: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    batch_size: 32
+    max_length: 512
+  
+  # Lightweight reranker (embedding-based)
+  lightweight:
+    enabled: true
+    model_name: "all-MiniLM-L6-v2"
+    use_cosine_similarity: true
+  
+  # Reranking strategy
+  strategy: "hybrid"  # Options: cross_encoder, lightweight, hybrid
+  
+  # When to use reranking
+  conditions:
+    min_candidates: 5  # Only rerank if we have at least N candidates
+    max_candidates: 50  # Maximum candidates to rerank
+    always_rerank: false  # If true, always rerank regardless of candidate count
+  
+  # Score fusion
+  fusion:
+    method: "weighted_average"  # Options: weighted_average, reciprocal_rank_fusion
+    original_weight: 0.3
+    rerank_weight: 0.7
+  
+  # Deduplication
+  deduplication:
+    enabled: true
+    similarity_threshold: 0.95  # Remove chunks with >95% similarity
+
