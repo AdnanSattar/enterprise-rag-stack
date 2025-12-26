@@ -292,12 +292,12 @@ This repository accompanies **"The Enterprise RAG Engineering Playbook"** articl
 
 | Part | Title | Link | Modules Covered |
 |------|-------|------|-----------------|
-| **Part 1** | High Recall Retrieval and Precision Reranking | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-2-high-recall-retrieval-and-precision-reranking) | `retrieval/`, `reranking/` |
-| **Part 2** | Context Assembly and Grounded Prompting | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-3-context-assembly-and-grounded-prompting) | `context/` |
-| **Part 3** | Context Assembly and Grounded Prompting | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-3-context-assembly-and-grounded-prompting) | `context/` |
-| **Part 4** | Verification Layers and Graph-RAG | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-4-verification-layers-and-graph-rag-for-trustworthy-answers) | `verification/`, `graph_rag/` |
-| **Part 5** | Monitoring, Evaluation and Lifecycle Management | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-5-monitoring-evaluation-and-lifecycle-management) | `monitoring/`, `deployment/` |
-| **Part 6** | Security, Compliance and Cost Optimization | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-6-security-compliance-and-cost-optimization) | `security/`, `cost_optimization/` |
+| **Part 1** | Building a High-Quality Retrieval Foundation | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-1-building-a-high-quality-retrieval-foundation-f4839fef2e01) | `ingestion/`, `chunking/`, `embeddings/` |
+| **Part 2** | High Recall Retrieval and Precision Reranking | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-2-high-recall-retrieval-and-precision-reranking-d9e5e0bae803) | `retrieval/`, `reranking/` |
+| **Part 3** | Context Assembly and Grounded Prompting | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-3-context-assembly-and-grounded-prompting-96613c3025e4) | `context/` |
+| **Part 4** | Verification Layers and Graph-RAG | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-4-verification-layers-and-graph-rag-for-trustworthy-answers-581b40d9e45f) | `verification/`, `graph_rag/` |
+| **Part 5** | Monitoring, Evaluation and Lifecycle Management | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-5-monitoring-evaluation-and-lifecycle-management-c0044d8292ff) | `monitoring/`, `deployment/` |
+| **Part 6** | Security, Compliance and Cost Optimization | [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-6-security-compliance-and-cost-optimization-56b65f11a56a) | `security/`, `cost_optimization/` |
 
 📖 **Full article series index**: [docs/article_series_index.md](docs/article_series_index.md)
 

@@ -10,9 +10,35 @@ A comprehensive guide to building production-grade RAG systems, covering everyth
 
 ---
 
-## Part 1: High Recall Retrieval and Precision Reranking
+## Part 1: Building a High-Quality Retrieval Foundation
 
-**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-2-high-recall-retrieval-and-precision-reranking)**
+**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-1-building-a-high-quality-retrieval-foundation-f4839fef2e01)**
+
+**Topics Covered:**
+
+- Document ingestion and normalization
+- Semantic chunking strategies
+- Embedding best practices and versioning
+- Foundation for high-quality retrieval
+
+**Related Code:**
+
+- `ingestion/` - Document normalization and preprocessing
+- `chunking/` - Semantic chunking implementation
+- `embeddings/` - Embedding generation and versioning
+- `config/embedding_config.yaml` - Embedding configuration
+
+**Key Takeaways:**
+
+- Proper document normalization is critical for retrieval quality
+- Semantic chunking preserves context better than fixed-size chunks
+- Embedding versioning enables safe model upgrades
+
+---
+
+## Part 2: High Recall Retrieval and Precision Reranking
+
+**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-2-high-recall-retrieval-and-precision-reranking-d9e5e0bae803)**
 
 **Topics Covered:**
 
@@ -36,9 +62,9 @@ A comprehensive guide to building production-grade RAG systems, covering everyth
 
 ---
 
-## Part 2: Context Assembly and Grounded Prompting
+## Part 3: Context Assembly and Grounded Prompting
 
-**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-3-context-assembly-and-grounded-prompting)**
+**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-3-context-assembly-and-grounded-prompting-96613c3025e4)**
 
 **Topics Covered:**
 
@@ -61,17 +87,9 @@ A comprehensive guide to building production-grade RAG systems, covering everyth
 
 ---
 
-## Part 3: Context Assembly and Grounded Prompting
-
-**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-3-context-assembly-and-grounded-prompting)**
-
-*Note: This appears to be a duplicate of Part 2. Please verify the correct link.*
-
----
-
 ## Part 4: Verification Layers and Graph-RAG
 
-**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-4-verification-layers-and-graph-rag-for-trustworthy-answers)**
+**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-4-verification-layers-and-graph-rag-for-trustworthy-answers-581b40d9e45f)**
 
 **Topics Covered:**
 
@@ -97,7 +115,7 @@ A comprehensive guide to building production-grade RAG systems, covering everyth
 
 ## Part 5: Monitoring, Evaluation and Lifecycle Management
 
-**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-5-monitoring-evaluation-and-lifecycle-management)**
+**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-5-monitoring-evaluation-and-lifecycle-management-c0044d8292ff)**
 
 **Topics Covered:**
 
@@ -125,7 +143,7 @@ A comprehensive guide to building production-grade RAG systems, covering everyth
 
 ## Part 6: Security, Compliance and Cost Optimization
 
-**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-6-security-compliance-and-cost-optimization)**
+**🔗 [Read on Medium](https://medium.com/@adnansattar09/rag-engineering-part-6-security-compliance-and-cost-optimization-56b65f11a56a)**
 
 **Topics Covered:**
 
@@ -161,12 +179,12 @@ Each article maps to specific modules in this repository:
 
 ```
 enterprise-rag-stack/
-├── ingestion/          # Document normalization (foundation)
-├── chunking/           # Semantic chunking (foundation)
-├── embeddings/         # Embedding versioning (foundation)
-├── retrieval/          # Part 1: Hybrid retrieval
-├── reranking/          # Part 1: Cross-encoder reranking
-├── context/            # Part 2: Context assembly & prompts
+├── ingestion/          # Part 1: Document normalization
+├── chunking/           # Part 1: Semantic chunking
+├── embeddings/         # Part 1: Embedding versioning
+├── retrieval/          # Part 2: Hybrid retrieval
+├── reranking/          # Part 2: Cross-encoder reranking
+├── context/            # Part 3: Context assembly & prompts
 ├── verification/       # Part 4: Answer verification
 ├── graph_rag/          # Part 4: Knowledge graph integration
 ├── monitoring/         # Part 5: Evaluation & metrics
